@@ -19,6 +19,24 @@ export const sampleGraph = {
 
 export const getNodeIds = (graph) => graph.nodes.map((node) => node.id);
 
+export const parseNonNegativeWeight = (value, context = 'Weight') => {
+  const weight = Number(value);
+
+  if (!Number.isFinite(weight) || weight < 0) {
+    throw new Error(`${context} must be 0 or a positive number.`);
+  }
+
+  return weight;
+};
+
+export const validateGraphWeights = (graph) => ({
+  ...graph,
+  edges: graph.edges.map((edge, index) => ({
+    ...edge,
+    weight: parseNonNegativeWeight(edge.weight, `Edge ${index + 1} weight`),
+  })),
+});
+
 export const createEdgeId = (source, target, existingEdges = []) => {
   const base = `${source}-${target}`;
   let id = base;
@@ -61,11 +79,11 @@ export const parseEdgeText = (value) => {
     .filter(Boolean)
     .forEach((line, index) => {
       const [source, target, weightValue] = line.split(/\s+/);
-      const weight = Number(weightValue);
-
-      if (!source || !target || Number.isNaN(weight)) {
+      if (!source || !target || weightValue === undefined) {
         throw new Error(`Line ${index + 1} should look like: A B 4`);
       }
+
+      const weight = parseNonNegativeWeight(weightValue, `Line ${index + 1} weight`);
 
       nodes.add(source);
       nodes.add(target);

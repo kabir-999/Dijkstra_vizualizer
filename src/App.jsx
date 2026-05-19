@@ -4,7 +4,15 @@ import Controls from './components/Controls';
 import ExplanationPanel from './components/ExplanationPanel';
 import GraphCanvas from './components/GraphCanvas';
 import { generateDijkstraSteps } from './algorithms/dijkstra';
-import { createEdgeId, getNodeIds, parseEdgeText, randomGraph, sampleGraph } from './utils/graphHelpers';
+import {
+  createEdgeId,
+  getNodeIds,
+  parseEdgeText,
+  parseNonNegativeWeight,
+  randomGraph,
+  sampleGraph,
+  validateGraphWeights,
+} from './utils/graphHelpers';
 
 const initialText = sampleGraph.edges.map((edge) => `${edge.source} ${edge.target} ${edge.weight}`).join('\n');
 
@@ -89,8 +97,16 @@ export default function App() {
   };
 
   const handleAddEdge = () => {
-    const weight = Number(edgeForm.weight);
-    if (!edgeForm.source || !edgeForm.target || Number.isNaN(weight) || weight < 0) {
+    if (!edgeForm.source || !edgeForm.target) {
+      return;
+    }
+
+    let weight;
+    try {
+      weight = parseNonNegativeWeight(edgeForm.weight, 'Edge weight');
+      setImportError('');
+    } catch (error) {
+      setImportError(error.message);
       return;
     }
 
@@ -199,8 +215,9 @@ export default function App() {
         if (!Array.isArray(parsed.nodes) || !Array.isArray(parsed.edges)) {
           throw new Error('JSON must include nodes and edges arrays.');
         }
+        const validated = validateGraphWeights(parsed);
         setImportError('');
-        updateGraph(parsed);
+        updateGraph(validated);
       } catch (error) {
         setImportError(error.message);
       }
